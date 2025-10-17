@@ -2,3 +2,16 @@
 .venv
 .git
 .gitignore
+
+*.pyc
+__pycache__
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.vscode
+.idea
+*.sqlite3
+db.sqlite3
