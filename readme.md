@@ -1,37 +1,23 @@
+## Prerequisites:
+- Docker and Docker Compose installed on your machine.
+- Python 3.8 or higher installed (for local development).
+
 ## General:
-To know which python environment you're running:
-```bash
-which python
-```
+- To start the app
 
-Install dependencies on that py environment:
-```bash
-pip install django
-pip install psycopg
-```
+`make up`
 
-## DB:
-Run:
-```bash
-python manage.py makemigrations
-```
-so Django scans the models, sees what changed, and creates a migration file (a Python file describing what to add/remove/change in the database).
+To shut down the app
 
-Then run:
-```bash
-python manage.py migrate
-```
-so Django executes SQL commands to update the db schema.
+`make down`
 
+## Running Django commands
+- As the app is running inside a docker container, to run django commands you need to run them through docker-compose. For example, to run migrations:
 
-## Admin
-By registering models in admin.py, Django’s admin site lets us view, edit, and create rows visually.
+```docker-compose exec web python manage.py migrate```
+- To create a superuser:
 
-Run the server:
-```bash
-python manage.py runserver
-```
+```docker-compose exec web python manage.py createsuperuser```
 
-Go to http://127.0.0.1:8000/admin
-
-Login with superuser credentials
+- Just run:
+```docker-compose exec web python manage.py <command>```
