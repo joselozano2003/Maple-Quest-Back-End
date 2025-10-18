@@ -1,6 +1,6 @@
-from datetime import timezone
 from django.db import models
-from models import Q
+from django.db.models import Q
+from django.utils import timezone
 from ..utils import getModelFields
 
 
