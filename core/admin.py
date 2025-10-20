@@ -4,20 +4,20 @@ from .models import *
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("userId", "email", "phone_no", "points")
-    search_fields = ("userId", "email")
+    list_display = ("user_id", "email", "phone_no", "profile_pic_url", "points")
+    search_fields = ("user_id", "email")
 
 
 @admin.register(Achievement)
 class AchievementAdmin(admin.ModelAdmin):
-    list_display = ("achievementId", "description", "points")
-    search_fields = ("achievementId", "description")
+    list_display = ("achievement_id", "description", "points")
+    search_fields = ("achievement_id", "description")
 
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ("locationId", "name", "latitude", "longitude", "description", "points")
-    search_fields = ("locationId", "name", "description")
+    list_display = ("location_id", "name", "latitude", "longitude", "description", "points")
+    search_fields = ("location_id", "name", "description")
 
 
 @admin.register(FriendRequest)
@@ -36,5 +36,5 @@ class VisitAdmin(admin.ModelAdmin):
 
 @admin.register(Image)
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ("visit", "description", "imageURL", "likes")
+    list_display = ("visit", "description", "image_url", "likes")
     search_fields = ("visit__user__email", "visit__location__name", "description")

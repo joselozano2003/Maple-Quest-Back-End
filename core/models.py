@@ -1,14 +1,15 @@
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from ..utils import getModelFields
+from .utils import getModelFields
 
 
 class User(models.Model):
-    userId = models.CharField(primary_key=True, max_length=15)
+    user_id = models.CharField(primary_key=True, max_length=15)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=30)
     phone_no = models.CharField(max_length=10)
+    profile_pic_url = models.URLField()
     points = models.IntegerField(default=0)
 
     visited_locations = models.ManyToManyField(
@@ -68,7 +69,7 @@ class FriendRequest(models.Model):
 
 
 class Achievement(models.Model):
-    achievementId = models.CharField(primary_key=True, max_length=10)
+    achievement_id = models.CharField(primary_key=True, max_length=10)
     description = models.TextField()
     points = models.IntegerField()
 
@@ -77,7 +78,7 @@ class Achievement(models.Model):
 
 
 class Location(models.Model):
-    locationId = models.CharField(primary_key=True, max_length=10)
+    location_id = models.CharField(primary_key=True, max_length=10)
     name = models.CharField(max_length=100)
     latitude = models.CharField(max_length=50)
     longitude = models.CharField(max_length=50)
@@ -106,7 +107,7 @@ class Visit(models.Model):
 class Image(models.Model):
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name="images")
     description = models.TextField()
-    imageURL = models.URLField()
+    image_url = models.URLField()
     likes = models.IntegerField(default=0)
 
     def __str__(self):

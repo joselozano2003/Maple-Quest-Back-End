@@ -7,7 +7,7 @@
 
 `make up`
 
-To shut down the app
+- To shut down the app
 
 `make down`
 
@@ -15,8 +15,8 @@ To shut down the app
 - As the app is running inside a docker container, to run django commands you need to run them through docker-compose. For example, to run migrations:
 
 ```docker-compose exec web python manage.py migrate```
-- To create a superuser:
 
+- To create a superuser:
 ```docker-compose exec web python manage.py createsuperuser```
 
 - Just run:
