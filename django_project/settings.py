@@ -18,7 +18,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'core',  # Added your core app
+    'core',
     # 'api',  # Uncomment after creating the app
 ]
 

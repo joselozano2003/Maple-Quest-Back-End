@@ -8,8 +8,8 @@ class User(models.Model):
     user_id = models.CharField(primary_key=True, max_length=15)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=30)
-    phone_no = models.CharField(max_length=10)
-    profile_pic_url = models.URLField()
+    phone_no = models.CharField(max_length=10, blank=True)
+    profile_pic_url = models.URLField(blank=True)
     points = models.IntegerField(default=0)
 
     visited_locations = models.ManyToManyField(
