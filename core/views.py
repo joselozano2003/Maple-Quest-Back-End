@@ -3,6 +3,31 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import *
 from .serializers import *
+from django.http import JsonResponse
+from django.db import connection
+from django.utils import timezone
+
+
+def health_check(request):
+    """
+    Health check endpoint that verifies database connectivity
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        
+        return JsonResponse({
+            'status': 'healthy',
+            'timestamp': timezone.now().isoformat(),
+            'database': 'connected'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'unhealthy',
+            'timestamp': timezone.now().isoformat(),
+            'database': 'disconnected',
+            'error': str(e)
+        }, status=503)
 
 
 class UserViewSet(viewsets.ModelViewSet):
