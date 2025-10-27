@@ -119,7 +119,7 @@ REST_FRAMEWORK = {
 }
 
 # Security settings for production
-if not DEBUG:
+if not DEBUG and config('USE_HTTPS', default=False, cast=bool):
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
