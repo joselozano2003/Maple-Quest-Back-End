@@ -5,6 +5,7 @@ import {
   aws_ecs_patterns as ecs_patterns,
   aws_iam as iam,
   aws_logs as logs,
+  aws_rds as rds,
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as dotenv from "dotenv";
@@ -36,6 +37,11 @@ export class MapleQuestStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // Create RDS secret for Postgres
+    const dbCredentialsSecret = new rds.DatabaseSecret(this, "PostgresSecret", {
+      username: "postgres",
+    });
+
     const taskDef = new ecs.FargateTaskDefinition(this, "TaskDef", {
       cpu: 512,
       memoryLimitMiB: 1024,
@@ -47,6 +53,31 @@ export class MapleQuestStack extends cdk.Stack {
       },
     });
 
+    const dbInstance = new rds.DatabaseInstance(this, "MapleQuestRDS", {
+      engine: rds.DatabaseInstanceEngine.postgres({
+        version: rds.PostgresEngineVersion.VER_17_4,
+      }),
+      instanceType: ec2.InstanceType.of(
+        ec2.InstanceClass.T4G,
+        ec2.InstanceSize.MICRO
+      ),
+      vpc,
+      credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
+      multiAz: false,
+      allocatedStorage: 20,
+      storageType: rds.StorageType.GP2,
+      publiclyAccessible: true, // allows DBeaver connection
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      deletionProtection: false,
+      databaseName: "maplequest",
+    });
+
+    dbInstance.connections.allowFromAnyIpv4(
+      ec2.Port.tcp(5432),
+      "Allow all inbound PostgreSQL traffic"
+    );
+
     const container = taskDef.addContainer("DjangoAppContainer", {
       containerName: "django-app",
       image: ecs.ContainerImage.fromRegistry(
@@ -57,15 +88,17 @@ export class MapleQuestStack extends cdk.Stack {
         streamPrefix: "django",
       }),
       environment: {
-        DB_NAME: process.env.DB_NAME!,
-        DB_USER: process.env.DB_USER!,
-        DB_PASSWORD: process.env.DB_PASSWORD!,
-        DB_HOST: process.env.DB_HOST!,
-        DB_PORT: process.env.DB_PORT!,
         SECRET_KEY: process.env.SECRET_KEY!,
         DEBUG: process.env.DEBUG ?? "False",
         ALLOWED_HOSTS: process.env.ALLOWED_HOSTS ?? "*",
-        USE_HTTPS: process.env.USE_HTTPS ?? "False"
+        USE_HTTPS: process.env.USE_HTTPS ?? "False",
+      },
+      secrets: {
+        DB_NAME: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "dbname"),
+        DB_USER: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "username"),
+        DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "password"),
+        DB_HOST: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "host"),
+        DB_PORT: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "port"),
       },
     });
 
@@ -87,8 +120,18 @@ export class MapleQuestStack extends cdk.Stack {
       }
     );
 
+    dbInstance.connections.allowDefaultPortFrom(fargateService.service);
+
     new cdk.CfnOutput(this, "ServiceURL", {
       value: `http://${fargateService.loadBalancer.loadBalancerDnsName}`,
+    });
+
+    new cdk.CfnOutput(this, "RDS_Endpoint", {
+      value: dbInstance.dbInstanceEndpointAddress,
+    });
+
+    new cdk.CfnOutput(this, "RDS_Secret_Arn", {
+      value: dbCredentialsSecret.secretArn,
     });
   }
 }
