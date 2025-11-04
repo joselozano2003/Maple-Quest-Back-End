@@ -117,6 +117,7 @@ export class MapleQuestStack extends cdk.Stack {
         publicLoadBalancer: true,
         assignPublicIp: true,
         listenerPort: 80,
+        enableExecuteCommand: true,
       }
     );
 

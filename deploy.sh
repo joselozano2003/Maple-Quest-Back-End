@@ -47,17 +47,17 @@ echo "⬆️ Pushing to ECR..."
 docker push $IMAGE_URI
 
 ## TODO: Get new CDK names and update below
-# echo "🚀 Updating ECS service..."
-# aws ecs update-service \
-#   --cluster maple-quest-cluster \
-#   --service maple-quest-task \
-#   --force-new-deployment \
-#   --region $AWS_REGION
+echo "🚀 Updating ECS service..."
+aws ecs update-service \
+  --cluster maple-quest-cluster \
+  --service MapleQuestStack-MapleQuestServiceE94BCDA4-oipQYBxvd0K6  \
+  --force-new-deployment \
+  --region $AWS_REGION
 
 # echo "🛑 Stopping old tasks..."
-# for task in $(aws ecs list-tasks --cluster maple-quest-cluster --service-name maple-quest-task --region us-west-2 --query 'taskArns[]' --output text); do
-#   aws ecs stop-task --cluster maple-quest-cluster --task $task --region us-west-2
-# done
+for task in $(aws ecs list-tasks --cluster maple-quest-cluster --service-name MapleQuestStack-MapleQuestServiceE94BCDA4-oipQYBxvd0K6 --region us-west-2 --query 'taskArns[]' --output text); do
+  aws ecs stop-task --cluster maple-quest-cluster --task $task --region us-west-2
+done
 
-# echo "✅ Deployment complete!"
+echo "✅ Deployment complete!"
 # echo "🔍 Check logs with: aws logs tail /ecs/maple-quest --follow --region $AWS_REGION"
