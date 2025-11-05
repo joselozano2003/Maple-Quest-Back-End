@@ -1,16 +1,23 @@
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 from .utils import getModelFields
 
 
 class User(models.Model):
-    user_id = models.CharField(primary_key=True, max_length=15)
+    user_id = models.CharField(primary_key=True, max_length=15, db_column='userId')
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=30)
+    password = models.CharField(max_length=128)  # Increased for hashed passwords
     phone_no = models.CharField(max_length=10, blank=True)
-    profile_pic_url = models.URLField(blank=True)
     points = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+    
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
 
     visited_locations = models.ManyToManyField(
         'Location',

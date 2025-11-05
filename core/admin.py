@@ -4,7 +4,7 @@ from .models import *
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("user_id", "email", "phone_no", "profile_pic_url", "points")
+    list_display = ("user_id", "email", "phone_no", "points")
     search_fields = ("user_id", "email")
 
 
