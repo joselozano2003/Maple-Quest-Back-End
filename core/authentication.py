@@ -12,12 +12,7 @@ class CustomJWTAuthentication(JWTAuthentication):
         try:
             user_id = validated_token[jwt_settings.api_settings.USER_ID_CLAIM]
             user = User.objects.get(user_id=user_id)
-            
-            # Add required attributes for Django authentication
-            user.is_authenticated = True
-            user.is_anonymous = False
-            user.is_active = True
-            
+            # User model now has all required Django authentication attributes built-in
             return user
         except (KeyError, User.DoesNotExist):
             return AnonymousUser()
