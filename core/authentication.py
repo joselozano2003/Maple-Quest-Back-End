@@ -1,5 +1,4 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt import settings as jwt_settings
 from django.contrib.auth.models import AnonymousUser
 from .models import User
