@@ -51,6 +51,12 @@ Content-Type: application/json
 }
 ```
 
+As there is no Ui screen for creating users, you can run the following command on the terminal to create an user:
+
+```
+curl -X POST http://localhost:8000/auth/register/ -H "Content-Type: application/json" -d '{"email": "testuser@example.com", "password": "testpassword123", "phone_no": "1234567890"}'
+```
+
 **Response:**
 
 ```json
