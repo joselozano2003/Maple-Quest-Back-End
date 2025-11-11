@@ -35,6 +35,7 @@ export class MapleQuestStack extends cdk.Stack {
     const logGroup = new logs.LogGroup(this, "MapleQuestLogs", {
       logGroupName: "/ecs/maple-quest-new",
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_WEEK
     });
 
     // Create RDS secret for Postgres
@@ -114,7 +115,7 @@ export class MapleQuestStack extends cdk.Stack {
         cluster,
         taskDefinition: taskDef,
         desiredCount: 1,
-        publicLoadBalancer: true,
+        // publicLoadBalancer: true,
         assignPublicIp: true,
         listenerPort: 80,
         enableExecuteCommand: true,
