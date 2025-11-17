@@ -118,6 +118,7 @@ class Location(models.Model):
     longitude = models.CharField(max_length=50)
     description = models.TextField()
     points = models.IntegerField()
+    default_image_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return getModelFields(self)

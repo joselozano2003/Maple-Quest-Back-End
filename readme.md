@@ -383,7 +383,27 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
+**Example with curl:**
+
+```bash
+curl -X POST http://localhost:8000/api/users/generate_upload_url/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -d '{"filename": "test.jpg"}'
+```
+
+**Response (Local Development with MinIO):**
+
+```json
+{
+  "upload_url": "http://localhost:9000/maple-quest-images/images/user123/abc12345.jpg?AWSAccessKeyId=minioadmin&Signature=...",
+  "public_url": "http://localhost:9000/maple-quest-images/images/user123/abc12345.jpg",
+  "file_key": "images/user123/abc12345.jpg",
+  "expires_in": 3600
+}
+```
+
+**Response (Production with AWS S3):**
 
 ```json
 {
@@ -396,35 +416,98 @@ Content-Type: application/json
 
 ## S3 Image Storage
 
-The application uses AWS S3 for storing user images. The workflow is:
+The application uses different storage solutions for local development and production:
+
+### Local Development (MinIO)
+
+- **Storage**: MinIO S3-compatible server running in Docker
+- **Access**: `http://localhost:9000`
+- **Console**: `http://localhost:9001` (minioadmin/minioadmin123)
+- **URLs**: `http://localhost:9000/maple-quest-images/...`
+- **Benefits**: No AWS costs, offline development, faster uploads
+
+### Production (AWS S3)
+
+- **Storage**: Real AWS S3 bucket
+- **Access**: HTTPS with AWS infrastructure
+- **URLs**: `https://bucket-name.s3.region.amazonaws.com/...`
+- **Benefits**: Scalable, reliable, global CDN
+
+### Upload Workflow:
 
 1. **Get Upload URL**: Call `/api/users/generate_upload_url/` with filename
-2. **Upload Image**: Use the `upload_url` to PUT the image file to S3
+2. **Upload Image**: Use the `upload_url` to PUT the image file
 3. **Use Public URL**: Use the `public_url` in your visit images
 
 **iOS Upload Example:**
 
 ```swift
 // 1. Get presigned URL from your API
-// 2. Upload image to S3 using the presigned URL
+let response = await getUploadURL(filename: "photo.jpg")
+
+// 2. Upload image using the presigned URL
 let uploadURL = URL(string: response.upload_url)!
 var request = URLRequest(url: uploadURL)
 request.httpMethod = "PUT"
 request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
 request.httpBody = imageData
 
+let (_, uploadResponse) = try await URLSession.shared.data(for: request)
+
 // 3. Use the public_url in your visit API call
+let visitData = [
+    "note": "Beautiful place!",
+    "images": [
+        [
+            "image_url": response.public_url,
+            "description": "Amazing view"
+        ]
+    ]
+]
 ```
 
-**CDK Deployment:**
+**Test Upload with curl:**
 
-To deploy the S3 bucket:
+```bash
+# 1. Get upload URL
+RESPONSE=$(curl -s -X POST http://localhost:8000/api/users/generate_upload_url/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"filename": "test.jpg"}')
+
+# 2. Extract upload URL and upload file
+UPLOAD_URL=$(echo $RESPONSE | jq -r '.upload_url')
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @your-image.jpg
+```
+
+### Environment Differences:
+
+| Feature          | Local (MinIO)            | Production (AWS S3)                      |
+| ---------------- | ------------------------ | ---------------------------------------- |
+| **Base URL**     | `http://localhost:9000`  | `https://bucket.s3.region.amazonaws.com` |
+| **Credentials**  | minioadmin/minioadmin123 | AWS IAM (automatic)                      |
+| **Console**      | http://localhost:9001    | AWS S3 Console                           |
+| **Cost**         | Free                     | Pay per usage                            |
+| **Performance**  | Local network speed      | Global CDN                               |
+| **Availability** | Local only               | 99.999999999%                            |
+
+### Deployment:
+
+**Local Development:**
+
+```bash
+make up  # Starts MinIO automatically
+```
+
+**Production Deployment:**
 
 ```bash
 cd maple-quest-cdk
 npm install
 npm run build
-npm run cdk deploy
+npm run cdk deploy  # Creates real S3 bucket
 ```
 
 ### Health Check

@@ -118,6 +118,8 @@ export class MapleQuestStack extends cdk.Stack {
         USE_HTTPS: process.env.USE_HTTPS ?? "False",
         S3_BUCKET_NAME: imagesBucket.bucketName,
         AWS_REGION: this.region,
+        // Note: AWS_S3_ENDPOINT_URL is intentionally NOT set for production
+        // This ensures the app uses real AWS S3, not MinIO
       },
       secrets: {
         DB_NAME: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "dbname"),

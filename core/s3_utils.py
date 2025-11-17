@@ -7,9 +7,23 @@ import uuid
 
 class S3ImageUploader:
     def __init__(self):
-        self.s3_client = boto3.client('s3')
+        # Check if we're using MinIO (local development)
+        endpoint_url = os.getenv('AWS_S3_ENDPOINT_URL')
+        if endpoint_url:
+            self.s3_client = boto3.client(
+                's3',
+                endpoint_url=endpoint_url,
+                aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+                region_name=os.getenv('AWS_REGION', 'us-east-1')
+            )
+        else:
+            # Production AWS S3
+            self.s3_client = boto3.client('s3')
+        
         self.bucket_name = os.getenv('S3_BUCKET_NAME')
-        self.region = os.getenv('AWS_REGION', 'us-west-2')
+        self.region = os.getenv('AWS_REGION', 'us-east-1')
+        self.endpoint_url = endpoint_url
     
     def generate_presigned_url(self, file_key: str, expiration: int = 3600) -> str:
         """
@@ -32,6 +46,11 @@ class S3ImageUploader:
                 },
                 ExpiresIn=expiration
             )
+            
+            # For MinIO, replace internal Docker address with localhost
+            if self.endpoint_url and 'minio:9000' in response:
+                response = response.replace('minio:9000', 'localhost:9000')
+            
             return response
         except ClientError as e:
             print(f"Error generating presigned URL: {e}")
@@ -62,7 +81,13 @@ class S3ImageUploader:
         Returns:
             Public URL string
         """
-        return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{file_key}"
+        if self.endpoint_url:
+            # MinIO local development - use localhost for external access
+            external_url = self.endpoint_url.replace('minio:9000', 'localhost:9000')
+            return f"{external_url}/{self.bucket_name}/{file_key}"
+        else:
+            # Production AWS S3
+            return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{file_key}"
     
     def delete_file(self, file_key: str) -> bool:
         """
