@@ -32,6 +32,10 @@
 - AWS connection is mostly for deploying the infrastructure using AWS CDK and for pushing Docker images to Amazon ECR.
 - The later will be added in future PR where I will add GH actions for CI/CD.
 
+## Documentation
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/joselozano2003/Maple-Quest-Back-End)
+
 ## API Endpoints
 
 ### Authentication
