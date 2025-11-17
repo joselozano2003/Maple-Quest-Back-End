@@ -31,7 +31,7 @@ class LoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['user_id', 'email', 'phone_no', 'points', 'created_at']
+        fields = ['user_id', 'email', 'phone_no', 'points', 'profile_pic_url', 'created_at']
         read_only_fields = ['user_id', 'points', 'created_at']
 
 class FriendRequestSerializer(serializers.ModelSerializer):
@@ -48,11 +48,21 @@ class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = '__all__'
+        extra_kwargs = {
+            'location_id': {'read_only': True}
+        }
 
 class VisitSerializer(serializers.ModelSerializer):
+    images = serializers.SerializerMethodField()
+    
     class Meta:
         model = Visit
         fields = '__all__'
+    
+    def get_images(self, obj):
+        """Get all images associated with this visit"""
+        images = obj.images.all()
+        return ImageSerializer(images, many=True).data
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:

@@ -185,6 +185,18 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def friends(self, request):
+        """
+        Get current user's list of friends (accepted friend requests)
+        """
+        friends = request.user.friends()
+        serializer = UserProfileSerializer(friends, many=True)
+        return Response({
+            'friends': serializer.data,
+            'count': friends.count()
+        })
 
 
 class FriendRequestViewSet(viewsets.ModelViewSet):
@@ -233,6 +245,75 @@ class FriendRequestViewSet(viewsets.ModelViewSet):
         friend_request.save()
 
         return Response({'status': 'rejected'}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'])
+    def add_friend(self, request):
+        """
+        Send a friend request to a user by their email or phone number
+        """
+        email = request.data.get('email')
+        phone_no = request.data.get('phone_no')
+        
+        if not email and not phone_no:
+            return Response({
+                'error': 'Either email or phone_no is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Find the user by email or phone
+        try:
+            if email:
+                to_user = User.objects.get(email=email)
+            else:
+                to_user = User.objects.get(phone_no=phone_no)
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found with the provided email or phone number'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if trying to add themselves
+        if to_user.user_id == request.user.user_id:
+            return Response({
+                'error': 'You cannot send a friend request to yourself'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if friend request already exists
+        existing_request = FriendRequest.objects.filter(
+            models.Q(from_user=request.user, to_user=to_user) |
+            models.Q(from_user=to_user, to_user=request.user)
+        ).first()
+        
+        if existing_request:
+            if existing_request.status == FriendRequestStatus.PENDING:
+                return Response({
+                    'message': 'Friend request already sent',
+                    'friend_request': FriendRequestSerializer(existing_request).data
+                }, status=status.HTTP_200_OK)
+            elif existing_request.status == FriendRequestStatus.ACCEPTED:
+                return Response({
+                    'message': 'You are already friends with this user'
+                }, status=status.HTTP_200_OK)
+            elif existing_request.status == FriendRequestStatus.REJECTED:
+                # Update the rejected request to pending
+                existing_request.status = FriendRequestStatus.PENDING
+                existing_request.from_user = request.user
+                existing_request.to_user = to_user
+                existing_request.save()
+                return Response({
+                    'message': 'Friend request sent successfully',
+                    'friend_request': FriendRequestSerializer(existing_request).data
+                }, status=status.HTTP_201_CREATED)
+        
+        # Create new friend request
+        friend_request = FriendRequest.objects.create(
+            from_user=request.user,
+            to_user=to_user,
+            status=FriendRequestStatus.PENDING
+        )
+        
+        return Response({
+            'message': 'Friend request sent successfully',
+            'friend_request': FriendRequestSerializer(friend_request).data
+        }, status=status.HTTP_201_CREATED)
 
 
 class AchievementViewSet(viewsets.ModelViewSet):
@@ -243,6 +324,95 @@ class AchievementViewSet(viewsets.ModelViewSet):
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
+    
+    def get_permissions(self):
+        """
+        Allow unauthenticated access for GET requests (list and retrieve),
+        require authentication for create, update, delete, and visit
+        """
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        
+        return [permission() for permission in permission_classes]
+    
+    def perform_create(self, serializer):
+        """
+        Generate unique location_id when creating a location
+        """
+        # Generate unique location_id
+        location_id = str(uuid.uuid4())[:10]
+        while Location.objects.filter(location_id=location_id).exists():
+            location_id = str(uuid.uuid4())[:10]
+        
+        serializer.save(location_id=location_id)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def visit(self, request, pk=None):
+        """
+        Mark a location as visited by the authenticated user with optional images
+        """
+        location = self.get_object()
+        user = request.user
+        
+        # Check if user has already visited this location
+        existing_visit = Visit.objects.filter(user=user, location=location).first()
+        if existing_visit:
+            # If already visited, still allow adding new images
+            images_data = request.data.get('images', [])
+            created_images = []
+            
+            for image_data in images_data:
+                if 'image_url' in image_data:
+                    image = Image.objects.create(
+                        visit=existing_visit,
+                        image_url=image_data['image_url'],
+                        description=image_data.get('description', ''),
+                        likes=0
+                    )
+                    created_images.append(ImageSerializer(image).data)
+            
+            return Response({
+                'message': 'Location already visited, images added' if created_images else 'Location already visited',
+                'visit': VisitSerializer(existing_visit).data,
+                'images_added': created_images
+            }, status=status.HTTP_200_OK)
+        
+        # Create new visit
+        visit_data = {
+            'user': user,
+            'location': location,
+            'note': request.data.get('note', '')  # Optional note from request
+        }
+        
+        visit = Visit.objects.create(**visit_data)
+        
+        # Add images if provided
+        images_data = request.data.get('images', [])
+        created_images = []
+        
+        for image_data in images_data:
+            if 'image_url' in image_data:
+                image = Image.objects.create(
+                    visit=visit,
+                    image_url=image_data['image_url'],
+                    description=image_data.get('description', ''),
+                    likes=0
+                )
+                created_images.append(ImageSerializer(image).data)
+        
+        # Award points to user
+        user.points += location.points
+        user.save()
+        
+        return Response({
+            'message': 'Location visited successfully',
+            'visit': VisitSerializer(visit).data,
+            'images': created_images,
+            'points_earned': location.points,
+            'total_points': user.points
+        }, status=status.HTTP_201_CREATED)
 
 
 class VisitViewSet(viewsets.ModelViewSet):

@@ -149,14 +149,223 @@ Content-Type: application/json
 }
 ```
 
-### Other Endpoints
+### Location Endpoints
 
-Additional API endpoints for locations, visits, friend requests, and images are available through the DRF router at `/api/`:
+#### Get All Locations (No Authentication Required)
 
-- `GET /api/locations/` - List all locations
-- `GET /api/visits/` - List user visits
-- `GET /api/friend-requests/` - List friend requests
-- `GET /api/images/` - List images
+```bash
+GET /api/locations/
+```
+
+#### Get Specific Location (No Authentication Required)
+
+```bash
+GET /api/locations/{location_id}/
+```
+
+#### Create Location (Authentication Required)
+
+```bash
+POST /api/locations/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "name": "Central Park",
+  "latitude": "40.785091",
+  "longitude": "-73.968285",
+  "description": "A large public park in Manhattan",
+  "points": 50
+}
+```
+
+#### Visit Location (Authentication Required)
+
+```bash
+POST /api/locations/{location_id}/visit/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "note": "Amazing place to visit!",
+  "images": [
+    {
+      "image_url": "https://example.com/photo1.jpg",
+      "description": "Beautiful sunset view"
+    },
+    {
+      "image_url": "https://example.com/photo2.jpg",
+      "description": "Great hiking trail"
+    }
+  ]
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Location visited successfully",
+  "visit": {
+    "id": 1,
+    "user": "user123",
+    "location": "loc456",
+    "visited_at": "2024-11-16T10:30:00Z",
+    "note": "Amazing place to visit!"
+  },
+  "images": [
+    {
+      "id": 1,
+      "visit": 1,
+      "image_url": "https://example.com/photo1.jpg",
+      "description": "Beautiful sunset view",
+      "likes": 0
+    }
+  ],
+  "points_earned": 50,
+  "total_points": 150
+}
+```
+
+### Visit Endpoints
+
+#### Get All Your Visits (Authentication Required)
+
+```bash
+GET /api/visits/
+Authorization: Bearer <access_token>
+```
+
+**Response includes images for each visit:**
+
+```json
+[
+  {
+    "id": 1,
+    "user": "user123",
+    "location": "loc456",
+    "visited_at": "2024-11-16T10:30:00Z",
+    "note": "Amazing place to visit!",
+    "images": [
+      {
+        "id": 1,
+        "visit": 1,
+        "image_url": "https://example.com/photo1.jpg",
+        "description": "Beautiful sunset view",
+        "likes": 5
+      }
+    ]
+  }
+]
+```
+
+#### Get Specific Visit (Authentication Required)
+
+```bash
+GET /api/visits/{visit_id}/
+Authorization: Bearer <access_token>
+```
+
+### Friend System Endpoints
+
+#### Add Friend by Email or Phone (Authentication Required)
+
+```bash
+POST /api/friend-requests/add_friend/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "email": "friend@example.com"
+}
+```
+
+OR
+
+```bash
+{
+  "phone_no": "1234567890"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Friend request sent successfully",
+  "friend_request": {
+    "id": 1,
+    "from_user": "user123",
+    "to_user": "user456",
+    "status": "pending",
+    "created_at": "2024-11-16T10:30:00Z"
+  }
+}
+```
+
+#### Accept Friend Request (Authentication Required)
+
+```bash
+POST /api/friend-requests/{friend_request_id}/accept/
+Authorization: Bearer <access_token>
+```
+
+#### Reject Friend Request (Authentication Required)
+
+```bash
+POST /api/friend-requests/{friend_request_id}/reject/
+Authorization: Bearer <access_token>
+```
+
+#### Get Friend Requests (Authentication Required)
+
+```bash
+GET /api/friend-requests/
+Authorization: Bearer <access_token>
+```
+
+#### Get Friends List (Authentication Required)
+
+```bash
+GET /api/users/friends/
+Authorization: Bearer <access_token>
+```
+
+**Response:**
+
+```json
+{
+  "friends": [
+    {
+      "user_id": "friend123",
+      "email": "friend1@example.com",
+      "phone_no": "1234567890",
+      "points": 150,
+      "profile_pic_url": "https://example.com/profile1.jpg",
+      "created_at": "2024-11-15T10:30:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Image Endpoints
+
+#### Get Images from Your Visits (Authentication Required)
+
+```bash
+GET /api/images/
+Authorization: Bearer <access_token>
+```
+
+### User Profile Endpoints
+
+#### Get Current User Profile (Authentication Required)
+
+```bash
+GET /api/users/me/
+Authorization: Bearer <access_token>
+```
 
 ### Health Check
 

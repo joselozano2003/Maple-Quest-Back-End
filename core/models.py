@@ -9,8 +9,9 @@ class User(models.Model):
     user_id = models.CharField(primary_key=True, max_length=15, db_column='userId')
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  # Increased for hashed passwords
-    phone_no = models.CharField(max_length=10, blank=True)
+    phone_no = models.CharField(max_length=10, blank=True, unique=True, null=True)
     points = models.IntegerField(default=0)
+    profile_pic_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     
     def set_password(self, raw_password):
@@ -102,7 +103,7 @@ class FriendRequest(models.Model):
 
 
 class Achievement(models.Model):
-    achievement_id = models.CharField(primary_key=True, max_length=10)
+    achievement_id = models.CharField(primary_key=True, max_length=10, db_column='achievementId')
     description = models.TextField()
     points = models.IntegerField()
 
@@ -111,7 +112,7 @@ class Achievement(models.Model):
 
 
 class Location(models.Model):
-    location_id = models.CharField(primary_key=True, max_length=10)
+    location_id = models.CharField(primary_key=True, max_length=10, db_column='locationId')
     name = models.CharField(max_length=100)
     latitude = models.CharField(max_length=50)
     longitude = models.CharField(max_length=50)

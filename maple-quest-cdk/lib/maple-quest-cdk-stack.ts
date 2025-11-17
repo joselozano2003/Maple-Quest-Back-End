@@ -35,7 +35,7 @@ export class MapleQuestStack extends cdk.Stack {
     const logGroup = new logs.LogGroup(this, "MapleQuestLogs", {
       logGroupName: "/ecs/maple-quest-new",
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      retention: logs.RetentionDays.ONE_WEEK
+      retention: logs.RetentionDays.ONE_WEEK,
     });
 
     // Create RDS secret for Postgres
@@ -97,7 +97,10 @@ export class MapleQuestStack extends cdk.Stack {
       secrets: {
         DB_NAME: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "dbname"),
         DB_USER: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "username"),
-        DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "password"),
+        DB_PASSWORD: ecs.Secret.fromSecretsManager(
+          dbCredentialsSecret,
+          "password"
+        ),
         DB_HOST: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "host"),
         DB_PORT: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "port"),
       },
@@ -108,19 +111,20 @@ export class MapleQuestStack extends cdk.Stack {
       name: "django-app-8000-tcp",
     });
 
-    const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
-      this,
-      "MapleQuestService",
-      {
-        cluster,
-        taskDefinition: taskDef,
-        desiredCount: 1,
-        // publicLoadBalancer: true,
-        assignPublicIp: true,
-        listenerPort: 80,
-        enableExecuteCommand: true,
-      }
-    );
+    const fargateService =
+      new ecs_patterns.ApplicationLoadBalancedFargateService(
+        this,
+        "MapleQuestService",
+        {
+          cluster,
+          taskDefinition: taskDef,
+          desiredCount: 1,
+          publicLoadBalancer: true,
+          assignPublicIp: true,
+          listenerPort: 80,
+          enableExecuteCommand: true,
+        }
+      );
 
     dbInstance.connections.allowDefaultPortFrom(fargateService.service);
 
