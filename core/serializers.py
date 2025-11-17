@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['user_id', 'email', 'password', 'phone_no', 'points', 'created_at']
+        fields = ['user_id', 'email', 'password', 'first_name', 'last_name', 'phone_no', 'points', 'created_at']
         extra_kwargs = {
             'user_id': {'read_only': True},
             'password': {'write_only': True},
@@ -31,7 +31,7 @@ class LoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['user_id', 'email', 'phone_no', 'points', 'profile_pic_url', 'created_at']
+        fields = ['user_id', 'email', 'first_name', 'last_name', 'phone_no', 'points', 'profile_pic_url', 'created_at']
         read_only_fields = ['user_id', 'points', 'created_at']
 
 class FriendRequestSerializer(serializers.ModelSerializer):

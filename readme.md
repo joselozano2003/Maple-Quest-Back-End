@@ -26,6 +26,13 @@
 - Just run:
   `docker-compose exec web python manage.py <command>`
 
+**Note:** After adding first_name and last_name fields, you'll need to run migrations:
+
+```bash
+docker-compose exec web python manage.py makemigrations
+docker-compose exec web python manage.py migrate
+```
+
 ## Connecting to AWS
 
 - Make sure you have the AWS CLI installed and configured with the proper credentials.
@@ -51,14 +58,32 @@ Content-Type: application/json
 {
   "email": "user@example.com",
   "password": "password123",
+  "first_name": "John",
+  "last_name": "Doe",
   "phone_no": "1234567890"
 }
 ```
 
-As there is no Ui screen for creating users, you can run the following command on the terminal to create an user:
+As there is no UI screen for creating users, you can run the following command on the terminal to create a user:
 
+```bash
+curl -X POST http://localhost:8000/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "testuser@example.com",
+    "password": "testpassword123",
+    "first_name": "John",
+    "last_name": "Doe",
+    "phone_no": "1234567890"
+  }'
 ```
-curl -X POST http://localhost:8000/auth/register/ -H "Content-Type: application/json" -d '{"email": "testuser@example.com", "password": "testpassword123", "phone_no": "1234567890"}'
+
+**Note:** `first_name`, `last_name`, and `phone_no` are optional fields. You can register with just email and password:
+
+```bash
+curl -X POST http://localhost:8000/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "simple@example.com", "password": "password123"}'
 ```
 
 **Response:**
@@ -68,8 +93,11 @@ curl -X POST http://localhost:8000/auth/register/ -H "Content-Type: application/
   "user": {
     "user_id": "abc123-def456",
     "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
     "phone_no": "1234567890",
     "points": 0,
+    "profile_pic_url": "",
     "created_at": "2025-11-05T21:10:32.998848Z"
   },
   "tokens": {
@@ -99,8 +127,11 @@ Content-Type: application/json
   "user": {
     "user_id": "abc123-def456",
     "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
     "phone_no": "1234567890",
     "points": 0,
+    "profile_pic_url": "",
     "created_at": "2025-11-05T21:10:32.998848Z"
   },
   "tokens": {
@@ -124,8 +155,11 @@ Authorization: Bearer <access_token>
 {
   "user_id": "abc123-def456",
   "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
   "phone_no": "1234567890",
   "points": 0,
+  "profile_pic_url": "",
   "created_at": "2025-11-05T21:10:32.998848Z"
 }
 ```
@@ -138,8 +172,27 @@ Authorization: Bearer <access_token>
 Content-Type: application/json
 
 {
-  "phone_no": "9876543210"
+  "first_name": "Johnny",
+  "last_name": "Smith",
+  "phone_no": "9876543210",
+  "profile_pic_url": "https://example.com/new-profile.jpg"
 }
+```
+
+**Partial Updates:** You can update individual fields:
+
+```bash
+# Update only name
+curl -X PUT http://localhost:8000/auth/profile/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"first_name": "Johnny", "last_name": "Smith"}'
+
+# Update only profile picture
+curl -X PUT http://localhost:8000/auth/profile/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"profile_pic_url": "https://example.com/new-avatar.jpg"}'
 ```
 
 #### Refresh JWT Token
@@ -343,6 +396,8 @@ Authorization: Bearer <access_token>
     {
       "user_id": "friend123",
       "email": "friend1@example.com",
+      "first_name": "Alice",
+      "last_name": "Johnson",
       "phone_no": "1234567890",
       "points": 150,
       "profile_pic_url": "https://example.com/profile1.jpg",

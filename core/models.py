@@ -9,6 +9,8 @@ class User(models.Model):
     user_id = models.CharField(primary_key=True, max_length=15, db_column='userId')
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  # Increased for hashed passwords
+    first_name = models.CharField(max_length=50, blank=True)
+    last_name = models.CharField(max_length=50, blank=True)
     phone_no = models.CharField(max_length=10, blank=True, unique=True, null=True)
     points = models.IntegerField(default=0)
     profile_pic_url = models.URLField(blank=True)

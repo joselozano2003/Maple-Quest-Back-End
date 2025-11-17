@@ -22,11 +22,16 @@ export class MapleQuestStack extends cdk.Stack {
       maxAzs: 2,
     });
 
-    // Create public S3 bucket for iOS app image uploads
+    // Create S3 bucket for iOS app image uploads
     const imagesBucket = new s3.Bucket(this, "MapleQuestImagesBucket", {
       bucketName: `maple-quest-images-${this.account}-${this.region}`,
-      publicReadAccess: true,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      publicReadAccess: false, // We'll handle public access manually
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false,
+      }),
       cors: [
         {
           allowedMethods: [
@@ -43,6 +48,20 @@ export class MapleQuestStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Be careful with this in production
       autoDeleteObjects: true, // Be careful with this in production
     });
+
+    // Add bucket policy for public read access to specific paths
+    imagesBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        sid: "PublicReadGetObject",
+        effect: iam.Effect.ALLOW,
+        principals: [new iam.AnyPrincipal()],
+        actions: ["s3:GetObject"],
+        resources: [
+          `${imagesBucket.bucketArn}/locations/*`,
+          `${imagesBucket.bucketArn}/images/*`,
+        ],
+      })
+    );
 
     const cluster = new ecs.Cluster(this, "MapleQuestCluster", {
       vpc,
