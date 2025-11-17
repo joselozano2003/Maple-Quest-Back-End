@@ -371,6 +371,62 @@ GET /api/users/me/
 Authorization: Bearer <access_token>
 ```
 
+#### Generate S3 Upload URL (Authentication Required)
+
+```bash
+POST /api/users/generate_upload_url/
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "filename": "my-photo.jpg"
+}
+```
+
+**Response:**
+
+```json
+{
+  "upload_url": "https://maple-quest-images-123456789-us-west-2.s3.amazonaws.com/images/user123/abc12345.jpg?X-Amz-Algorithm=...",
+  "public_url": "https://maple-quest-images-123456789-us-west-2.s3.amazonaws.com/images/user123/abc12345.jpg",
+  "file_key": "images/user123/abc12345.jpg",
+  "expires_in": 3600
+}
+```
+
+## S3 Image Storage
+
+The application uses AWS S3 for storing user images. The workflow is:
+
+1. **Get Upload URL**: Call `/api/users/generate_upload_url/` with filename
+2. **Upload Image**: Use the `upload_url` to PUT the image file to S3
+3. **Use Public URL**: Use the `public_url` in your visit images
+
+**iOS Upload Example:**
+
+```swift
+// 1. Get presigned URL from your API
+// 2. Upload image to S3 using the presigned URL
+let uploadURL = URL(string: response.upload_url)!
+var request = URLRequest(url: uploadURL)
+request.httpMethod = "PUT"
+request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+request.httpBody = imageData
+
+// 3. Use the public_url in your visit API call
+```
+
+**CDK Deployment:**
+
+To deploy the S3 bucket:
+
+```bash
+cd maple-quest-cdk
+npm install
+npm run build
+npm run cdk deploy
+```
+
 ### Health Check
 
 ```bash

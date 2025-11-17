@@ -6,6 +6,7 @@ import {
   aws_iam as iam,
   aws_logs as logs,
   aws_rds as rds,
+  aws_s3 as s3,
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as dotenv from "dotenv";
@@ -19,6 +20,28 @@ export class MapleQuestStack extends cdk.Stack {
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: 2,
+    });
+
+    // Create public S3 bucket for iOS app image uploads
+    const imagesBucket = new s3.Bucket(this, "MapleQuestImagesBucket", {
+      bucketName: `maple-quest-images-${this.account}-${this.region}`,
+      publicReadAccess: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      cors: [
+        {
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.POST,
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.DELETE,
+          ],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+          maxAge: 3000,
+        },
+      ],
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Be careful with this in production
+      autoDeleteObjects: true, // Be careful with this in production
     });
 
     const cluster = new ecs.Cluster(this, "MapleQuestCluster", {
@@ -93,6 +116,8 @@ export class MapleQuestStack extends cdk.Stack {
         DEBUG: process.env.DEBUG ?? "False",
         ALLOWED_HOSTS: process.env.ALLOWED_HOSTS ?? "*",
         USE_HTTPS: process.env.USE_HTTPS ?? "False",
+        S3_BUCKET_NAME: imagesBucket.bucketName,
+        AWS_REGION: this.region,
       },
       secrets: {
         DB_NAME: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "dbname"),
@@ -128,6 +153,9 @@ export class MapleQuestStack extends cdk.Stack {
 
     dbInstance.connections.allowDefaultPortFrom(fargateService.service);
 
+    // Grant the ECS task permission to read/write to the S3 bucket
+    imagesBucket.grantReadWrite(taskDef.taskRole);
+
     new cdk.CfnOutput(this, "ServiceURL", {
       value: `http://${fargateService.loadBalancer.loadBalancerDnsName}`,
     });
@@ -138,6 +166,16 @@ export class MapleQuestStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "RDS_Secret_Arn", {
       value: dbCredentialsSecret.secretArn,
+    });
+
+    new cdk.CfnOutput(this, "S3_Bucket_Name", {
+      value: imagesBucket.bucketName,
+      description: "S3 bucket for storing user images",
+    });
+
+    new cdk.CfnOutput(this, "S3_Bucket_URL", {
+      value: `https://${imagesBucket.bucketName}.s3.${this.region}.amazonaws.com`,
+      description: "S3 bucket URL for accessing images",
     });
   }
 }

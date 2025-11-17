@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import models
 from .models import *
 from .serializers import *
+from .s3_utils import S3ImageUploader
 from django.http import JsonResponse
 from django.db import connection
 from django.utils import timezone
@@ -196,6 +197,35 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({
             'friends': serializer.data,
             'count': friends.count()
+        })
+    
+    @action(detail=False, methods=['post'])
+    def generate_upload_url(self, request):
+        """
+        Generate a presigned URL for uploading images to S3
+        """
+        filename = request.data.get('filename')
+        if not filename:
+            return Response({
+                'error': 'filename is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        s3_uploader = S3ImageUploader()
+        file_key = s3_uploader.generate_unique_filename(filename, request.user.user_id)
+        presigned_url = s3_uploader.generate_presigned_url(file_key)
+        
+        if not presigned_url:
+            return Response({
+                'error': 'Failed to generate upload URL'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        public_url = s3_uploader.get_public_url(file_key)
+        
+        return Response({
+            'upload_url': presigned_url,
+            'public_url': public_url,
+            'file_key': file_key,
+            'expires_in': 3600  # 1 hour
         })
 
 
