@@ -220,6 +220,51 @@ GET /api/locations/
 GET /api/locations/{location_id}/
 ```
 
+#### Get All Images for a Location (No Authentication Required)
+
+```bash
+GET /api/locations/{location_id}/images/
+```
+
+**Example:**
+
+```bash
+curl -X GET http://localhost:8000/api/locations/380ea34a-4/images/
+```
+
+**Response:**
+
+```json
+{
+  "location_id": "380ea34a-4",
+  "location_name": "Niagara Falls",
+  "total_images": 5,
+  "images": [
+    {
+      "id": 5,
+      "visit": 3,
+      "description": "Beautiful sunset view",
+      "image_url": "http://localhost:9000/maple-quest-images/images/user123/abc.jpg",
+      "likes": 12
+    },
+    {
+      "id": 4,
+      "visit": 3,
+      "description": "Great hiking trail",
+      "image_url": "http://localhost:9000/maple-quest-images/images/user456/def.jpg",
+      "likes": 8
+    },
+    {
+      "id": 3,
+      "visit": 2,
+      "description": "Amazing waterfall",
+      "image_url": "http://localhost:9000/maple-quest-images/images/user789/ghi.jpg",
+      "likes": 15
+    }
+  ]
+}
+```
+
 #### Create Location (Authentication Required)
 
 ```bash
@@ -410,12 +455,68 @@ Authorization: Bearer <access_token>
 
 ### Image Endpoints
 
-#### Get Images from Your Visits (Authentication Required)
+#### Get All Your Uploaded Images (Authentication Required)
 
 ```bash
 GET /api/images/
 Authorization: Bearer <access_token>
 ```
+
+**Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "visit": 5,
+    "image_url": "http://localhost:9000/maple-quest-images/images/user123/abc12345.jpg",
+    "description": "Beautiful sunset at Niagara Falls",
+    "likes": 12
+  },
+  {
+    "id": 2,
+    "visit": 3,
+    "image_url": "http://localhost:9000/maple-quest-images/images/user123/def67890.jpg",
+    "description": "Amazing view from CN Tower",
+    "likes": 8
+  },
+  {
+    "id": 3,
+    "visit": 7,
+    "image_url": "http://localhost:9000/maple-quest-images/images/user123/ghi11223.jpg",
+    "description": "Hiking trail at Banff National Park",
+    "likes": 15
+  }
+]
+```
+
+**Example with curl:**
+
+```bash
+curl -X GET http://localhost:8000/api/images/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**What you get:**
+
+- All images uploaded by the authenticated user
+- Images from all your visits across all locations
+- Image metadata: description, likes, visit reference
+- Direct URLs to access the images
+- Ordered by upload time (most recent first)
+
+#### Get Images for a Specific Visit
+
+To get images for a specific visit, you can filter by visit ID or use the visit endpoint which includes images:
+
+```bash
+# Get visit with all its images
+GET /api/visits/{visit_id}/
+Authorization: Bearer <access_token>
+```
+
+This returns the visit data with all associated images included in the response.
 
 ### User Profile Endpoints
 
@@ -577,3 +678,134 @@ Returns server health status and database connectivity.
 
 - The application is configured to connect to a PostgreSQL database in RDS.
 - Reach out to Lozano for the database credentials and connection details, but its not needed, you can run the app locally with the local Postgres instance defined in the docker-compose file.
+
+## API Quick Reference
+
+### Image & Photo Management
+
+| Endpoint                          | Method | Auth | Description                               |
+| --------------------------------- | ------ | ---- | ----------------------------------------- |
+| `/api/images/`                    | GET    | ✅   | Get all YOUR uploaded images              |
+| `/api/images/{id}/`               | GET    | ✅   | Get a specific image                      |
+| `/api/locations/{id}/images/`     | GET    | ❌   | Get all images for a location (all users) |
+| `/api/visits/{id}/`               | GET    | ✅   | Get a visit with all its images           |
+| `/api/locations/{id}/visit/`      | POST   | ✅   | Visit location and add images             |
+| `/api/users/generate_upload_url/` | POST   | ✅   | Get S3 presigned URL for upload           |
+
+### Location Management
+
+| Endpoint                     | Method | Auth | Description                    |
+| ---------------------------- | ------ | ---- | ------------------------------ |
+| `/api/locations/`            | GET    | ❌   | Get all locations              |
+| `/api/locations/{id}/`       | GET    | ❌   | Get specific location          |
+| `/api/locations/`            | POST   | ✅   | Create new location            |
+| `/api/locations/{id}/visit/` | POST   | ✅   | Visit a location               |
+| `/api/visits/`               | GET    | ✅   | Get all your visits            |
+| `/api/visits/{id}/`          | GET    | ✅   | Get specific visit with images |
+
+### User & Profile
+
+| Endpoint               | Method | Auth | Description           |
+| ---------------------- | ------ | ---- | --------------------- |
+| `/auth/register/`      | POST   | ❌   | Register new user     |
+| `/auth/login/`         | POST   | ❌   | Login user            |
+| `/auth/profile/`       | GET    | ✅   | Get your profile      |
+| `/auth/profile/`       | PUT    | ✅   | Update your profile   |
+| `/auth/token/refresh/` | POST   | ❌   | Refresh JWT token     |
+| `/api/users/me/`       | GET    | ✅   | Get current user      |
+| `/api/users/friends/`  | GET    | ✅   | Get your friends list |
+
+### Friend System
+
+| Endpoint                            | Method | Auth | Description           |
+| ----------------------------------- | ------ | ---- | --------------------- |
+| `/api/friend-requests/add_friend/`  | POST   | ✅   | Send friend request   |
+| `/api/friend-requests/`             | GET    | ✅   | Get friend requests   |
+| `/api/friend-requests/{id}/accept/` | POST   | ✅   | Accept friend request |
+| `/api/friend-requests/{id}/reject/` | POST   | ✅   | Reject friend request |
+
+## Common Use Cases
+
+### 1. Upload and Share a Photo at a Location
+
+```bash
+# Step 1: Get upload URL
+curl -X POST http://localhost:8000/api/users/generate_upload_url/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"filename": "niagara.jpg"}'
+
+# Step 2: Upload image to S3 (use upload_url from response)
+curl -X PUT "UPLOAD_URL_FROM_STEP_1" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @niagara.jpg
+
+# Step 3: Visit location with the image
+curl -X POST http://localhost:8000/api/locations/LOCATION_ID/visit/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "note": "Amazing waterfall!",
+    "images": [{
+      "image_url": "PUBLIC_URL_FROM_STEP_1",
+      "description": "Beautiful sunset at Niagara Falls"
+    }]
+  }'
+```
+
+### 2. View All Photos at a Location
+
+```bash
+# Get all user-submitted photos for a location
+curl -X GET http://localhost:8000/api/locations/LOCATION_ID/images/
+```
+
+### 3. Get Your Visit History with Photos
+
+```bash
+# Get all your visits
+curl -X GET http://localhost:8000/api/visits/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Get specific visit with all photos
+curl -X GET http://localhost:8000/api/visits/VISIT_ID/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### 4. Add a Friend and View Their Profile
+
+```bash
+# Send friend request
+curl -X POST http://localhost:8000/api/friend-requests/add_friend/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"email": "friend@example.com"}'
+
+# Accept friend request (as the recipient)
+curl -X POST http://localhost:8000/api/friend-requests/REQUEST_ID/accept/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# View friends list
+curl -X GET http://localhost:8000/api/users/friends/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## Response Status Codes
+
+| Code | Meaning      | Common Causes                           |
+| ---- | ------------ | --------------------------------------- |
+| 200  | Success      | Request completed successfully          |
+| 201  | Created      | Resource created successfully           |
+| 400  | Bad Request  | Invalid data or missing required fields |
+| 401  | Unauthorized | Missing or invalid authentication token |
+| 403  | Forbidden    | Not allowed to access this resource     |
+| 404  | Not Found    | Resource doesn't exist                  |
+| 500  | Server Error | Internal server error                   |
+
+## Authentication Notes
+
+- All authenticated endpoints require the `Authorization: Bearer <token>` header
+- Access tokens expire after 1 hour
+- Refresh tokens expire after 7 days
+- Use `/auth/token/refresh/` to get a new access token
+- Tokens are returned on registration and login

@@ -1,0 +1,7 @@
+MapleQuestStack.MapleQuestServiceLoadBalancerDNSB6702EA4 = MapleQ-Maple-6rNz12H9ecir-2111821443.us-west-2.elb.amazonaws.com
+MapleQuestStack.MapleQuestServiceServiceURL3D01B8FB = http://MapleQ-Maple-6rNz12H9ecir-2111821443.us-west-2.elb.amazonaws.com
+MapleQuestStack.RDSEndpoint = maplequeststack-maplequestrds40cd7f8f-mfsswfhars3t.czkkc0e8ipsa.us-west-2.rds.amazonaws.com
+MapleQuestStack.RDSSecretArn = arn:aws:secretsmanager:us-west-2:508426719460:secret:PostgresSecretE142E1BC-rxQoaxHj2z83-045K3H
+MapleQuestStack.S3BucketName = maple-quest-images-508426719460-us-west-2
+MapleQuestStack.S3BucketURL = https://maple-quest-images-508426719460-us-west-2.s3.us-west-2.amazonaws.com
+MapleQuestStack.ServiceURL = http://MapleQ-Maple-6rNz12H9ecir-2111821443.us-west-2.elb.amazonaws.com

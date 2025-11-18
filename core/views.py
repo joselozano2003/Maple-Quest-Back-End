@@ -378,6 +378,27 @@ class LocationViewSet(viewsets.ModelViewSet):
         
         serializer.save(location_id=location_id)
     
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+    def images(self, request, pk=None):
+        """
+        Get all images for a specific location from all users' visits
+        """
+        location = self.get_object()
+        
+        # Get all visits to this location
+        visits = Visit.objects.filter(location=location)
+        
+        # Get all images from these visits
+        images = Image.objects.filter(visit__in=visits).order_by('-id')
+        
+        serializer = ImageSerializer(images, many=True)
+        return Response({
+            'location_id': location.location_id,
+            'location_name': location.name,
+            'total_images': images.count(),
+            'images': serializer.data
+        })
+    
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def visit(self, request, pk=None):
         """
