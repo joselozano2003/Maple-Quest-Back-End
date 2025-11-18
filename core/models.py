@@ -116,6 +116,7 @@ class Achievement(models.Model):
 class Location(models.Model):
     location_id = models.CharField(primary_key=True, max_length=10, db_column='locationId')
     name = models.CharField(max_length=100)
+    province = models.CharField(max_length=100, blank=True)
     latitude = models.CharField(max_length=50)
     longitude = models.CharField(max_length=50)
     description = models.TextField()

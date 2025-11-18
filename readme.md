@@ -26,7 +26,7 @@
 - Just run:
   `docker-compose exec web python manage.py <command>`
 
-**Note:** After adding first_name and last_name fields, you'll need to run migrations:
+**Note:** After adding first_name, last_name, and province fields, you'll need to run migrations:
 
 ```bash
 docker-compose exec web python manage.py makemigrations
@@ -274,12 +274,15 @@ Content-Type: application/json
 
 {
   "name": "Central Park",
+  "province": "New York",
   "latitude": "40.785091",
   "longitude": "-73.968285",
   "description": "A large public park in Manhattan",
   "points": 50
 }
 ```
+
+**Note:** `province` is optional and can be left blank.
 
 #### Visit Location (Authentication Required)
 
