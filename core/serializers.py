@@ -35,9 +35,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['user_id', 'points', 'created_at']
 
 class FriendRequestSerializer(serializers.ModelSerializer):
+    from_user_details = UserProfileSerializer(source='from_user', read_only=True)
+    to_user_details = UserProfileSerializer(source='to_user', read_only=True)
+    
     class Meta:
         model = FriendRequest
-        fields = '__all__'
+        fields = ['id', 'from_user', 'to_user', 'from_user_details', 'to_user_details', 'status', 'created_at', 'updated_at']
 
 class AchievementSerializer(serializers.ModelSerializer):
     class Meta:

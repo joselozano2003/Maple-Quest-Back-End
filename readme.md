@@ -4,6 +4,11 @@
 - Python 3.8 or higher installed (for local development).
 - AWS CLI installed and configured (for AWS interactions, probably unnecessary for most).
 
+**Note for Apple Silicon (M1/M2/M3) Users:**
+
+- The local `Dockerfile` works natively on ARM64 (Apple Silicon)
+- For AWS deployment, use `Dockerfile.production` which targets AMD64
+
 ## General:
 
 - To start the app
