@@ -20,6 +20,14 @@ export class MapleQuestStack extends cdk.Stack {
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: 2,
+      natGateways: 0, // Remove NAT Gateways (saves ~$32-64/month)
+      // subnetConfiguration: [
+      //   {
+      //     name: "Public",
+      //     subnetType: ec2.SubnetType.PUBLIC,
+      //     cidrMask: 24,
+      //   },
+      // ],
     });
 
     // Create S3 bucket for iOS app image uploads
@@ -86,8 +94,8 @@ export class MapleQuestStack extends cdk.Stack {
     });
 
     const taskDef = new ecs.FargateTaskDefinition(this, "TaskDef", {
-      cpu: 512,
-      memoryLimitMiB: 1024,
+      cpu: 256,
+      memoryLimitMiB: 512,
       executionRole,
       family: "maple-quest-task",
       runtimePlatform: {
@@ -141,6 +149,7 @@ export class MapleQuestStack extends cdk.Stack {
         // This ensures the app uses real AWS S3, not MinIO
       },
       secrets: {
+        // Database credentials from RDS Secrets Manager
         DB_NAME: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "dbname"),
         DB_USER: ecs.Secret.fromSecretsManager(dbCredentialsSecret, "username"),
         DB_PASSWORD: ecs.Secret.fromSecretsManager(

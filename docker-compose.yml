@@ -41,9 +41,11 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
+      echo 'Configuring MinIO...';
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
-      /usr/bin/mc mb myminio/maple-quest-images;
-      /usr/bin/mc policy set public myminio/maple-quest-images;
+      /usr/bin/mc mb myminio/maple-quest-images --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/maple-quest-images;
+      echo 'MinIO configuration complete';
       exit 0;
       "
 

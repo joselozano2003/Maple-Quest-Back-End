@@ -357,10 +357,10 @@ class LocationViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         """
-        Allow unauthenticated access for GET requests (list and retrieve),
+        Allow unauthenticated access for GET requests (list, retrieve, and images),
         require authentication for create, update, delete, and visit
         """
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'images']:
             permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated]
@@ -427,7 +427,9 @@ class LocationViewSet(viewsets.ModelViewSet):
             return Response({
                 'message': 'Location already visited, images added' if created_images else 'Location already visited',
                 'visit': VisitSerializer(existing_visit).data,
-                'images_added': created_images
+                'images': created_images,
+                'points_earned': 0,  # No points for revisiting
+                'total_points': user.points
             }, status=status.HTTP_200_OK)
         
         # Create new visit
