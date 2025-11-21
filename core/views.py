@@ -384,7 +384,7 @@ class LocationViewSet(viewsets.ModelViewSet):
         Allow unauthenticated access for GET requests (list and retrieve),
         require authentication for create, update, delete, and visit
         """
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'images']:
             permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated]
