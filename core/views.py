@@ -199,6 +199,30 @@ class UserViewSet(viewsets.ModelViewSet):
             'count': friends.count()
         })
     
+    # --- NEW ACTION FOR SYNCING POINTS ---
+    @action(detail=False, methods=['post'])
+    def update_points(self, request):
+        """
+        Manually update the current user's points from the frontend
+        """
+        points = request.data.get('points')
+        
+        if points is None:
+            return Response({
+                'error': 'points value is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Update the user's points
+        user = request.user
+        user.points = int(points)
+        user.save()
+        
+        return Response({
+            'message': 'Points updated successfully',
+            'total_points': user.points
+        }, status=status.HTTP_200_OK)
+    # -------------------------------------
+
     @action(detail=False, methods=['post'])
     def generate_upload_url(self, request):
         """
@@ -357,10 +381,10 @@ class LocationViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         """
-        Allow unauthenticated access for GET requests (list, retrieve, and images),
+        Allow unauthenticated access for GET requests (list and retrieve),
         require authentication for create, update, delete, and visit
         """
-        if self.action in ['list', 'retrieve', 'images']:
+        if self.action in ['list', 'retrieve']:
             permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated]
@@ -427,9 +451,7 @@ class LocationViewSet(viewsets.ModelViewSet):
             return Response({
                 'message': 'Location already visited, images added' if created_images else 'Location already visited',
                 'visit': VisitSerializer(existing_visit).data,
-                'images': created_images,
-                'points_earned': 0,  # No points for revisiting
-                'total_points': user.points
+                'images_added': created_images
             }, status=status.HTTP_200_OK)
         
         # Create new visit
