@@ -50,12 +50,12 @@ docker push $IMAGE_URI
 echo "🚀 Updating ECS service..."
 aws ecs update-service \
   --cluster maple-quest-cluster \
-  --service MapleQuestStack-MapleQuestServiceE94BCDA4-oipQYBxvd0K6  \
+  --service MapleQuestStack-MapleQuestServiceE94BCDA4-rA0IAfYpCyFq  \
   --force-new-deployment \
   --region $AWS_REGION
 
 # echo "🛑 Stopping old tasks..."
-for task in $(aws ecs list-tasks --cluster maple-quest-cluster --service-name MapleQuestStack-MapleQuestServiceE94BCDA4-oipQYBxvd0K6 --region us-west-2 --query 'taskArns[]' --output text); do
+for task in $(aws ecs list-tasks --cluster maple-quest-cluster --service-name MapleQuestStack-MapleQuestServiceE94BCDA4-rA0IAfYpCyFq --region us-west-2 --query 'taskArns[]' --output text); do
   aws ecs stop-task --cluster maple-quest-cluster --task $task --region us-west-2
 done
 
