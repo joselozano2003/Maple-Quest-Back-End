@@ -63,10 +63,6 @@ class User(models.Model):
             Q(pk__in=sent.values('to_user')) | Q(pk__in=received.values('from_user'))
         )
 
-        # sent = FriendRequest.objects.filter(from_user=self, status="accepted").values_list("to_user", flat=True)
-        # received = FriendRequest.objects.filter(to_user=self, status="accepted").values_list("from_user", flat=True)
-        # return User.objects.filter(models.Q(pk__in=sent) | models.Q(pk__in=received))
-
     def add_friend(self, friend):
         self.friends.add(friend)
         friend.friends.add(self)
