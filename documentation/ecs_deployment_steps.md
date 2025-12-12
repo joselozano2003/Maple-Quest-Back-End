@@ -1,10 +1,6 @@
-# ====================
-# DEPLOYMENT STEPS FOR ECS
-# ====================
-"""
-# ========================================
-# STEP 1: CREATE RDS DATABASE
-# ========================================
+## DEPLOYMENT STEPS FOR ECS
+
+### STEP 1: CREATE RDS DATABASE
 1. Go to AWS RDS Console
 2. Create Database → PostgreSQL
 3. Settings:
@@ -20,9 +16,7 @@
    - Create new security group: myproject-rds-sg
    - Note the RDS endpoint after creation
 
-# ========================================
-# STEP 2: STORE SECRETS IN AWS SECRETS MANAGER
-# ========================================
+### STEP 2: STORE SECRETS IN AWS SECRETS MANAGER
 1. Go to AWS Secrets Manager
 2. Store a new secret → Other type of secret
 3. Add key-value pairs:
@@ -37,26 +31,22 @@
 4. Secret name: myproject/production
 5. Note the ARN for each secret
 
-# ========================================
-# STEP 3: CREATE ECR REPOSITORY
-# ========================================
+### STEP 3: CREATE ECR REPOSITORY
 1. Go to Amazon ECR Console
 2. Create repository
 3. Repository name: myproject
 4. Note the repository URI
 
-# Build and push Docker image locally:
+#### Build and push Docker image locally:
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 
 docker build -t myproject .
 docker tag myproject:latest YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/myproject:latest
 docker push YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/myproject:latest
 
-# ========================================
-# STEP 4: CREATE IAM ROLES
-# ========================================
+### STEP 4: CREATE IAM ROLES
 
-## A. ECS Task Execution Role (ecsTaskExecutionRole)
+#### A. ECS Task Execution Role (ecsTaskExecutionRole)
 1. Go to IAM → Roles → Create role
 2. Trusted entity: AWS service → Elastic Container Service → Elastic Container Service Task
 3. Attach policies:
@@ -78,23 +68,19 @@ Custom policy for Secrets Manager (more secure):
   ]
 }
 
-## B. ECS Task Role (ecsTaskRole)
+#### B. ECS Task Role (ecsTaskRole)
 1. Create role → AWS service → Elastic Container Service → Elastic Container Service Task
 2. Attach policies as needed (S3, SES, etc.)
 3. Role name: ecsTaskRole
 
-# ========================================
-# STEP 5: CREATE ECS CLUSTER
-# ========================================
+### STEP 5: CREATE ECS CLUSTER
 1. Go to Amazon ECS Console
 2. Create Cluster
 3. Cluster name: myproject-cluster
 4. Infrastructure: AWS Fargate
 5. Create
 
-# ========================================
-# STEP 6: CREATE ALB (Application Load Balancer)
-# ========================================
+### STEP 6: CREATE ALB (Application Load Balancer)
 1. Go to EC2 → Load Balancers → Create Load Balancer
 2. Application Load Balancer
 3. Settings:
@@ -116,17 +102,13 @@ Custom policy for Secrets Manager (more secure):
    - Health check interval: 30 seconds
 7. Create
 
-# ========================================
-# STEP 7: CREATE CLOUDWATCH LOG GROUP
-# ========================================
+### STEP 7: CREATE CLOUDWATCH LOG GROUP
 1. Go to CloudWatch → Log groups
 2. Create log group
 3. Name: /ecs/myproject
 4. Retention: 7 days (or your preference)
 
-# ========================================
-# STEP 8: CREATE TASK DEFINITION
-# ========================================
+### STEP 8: CREATE TASK DEFINITION
 1. Go to ECS → Task Definitions → Create new Task Definition
 2. Family: myproject-task
 3. Launch type: Fargate
@@ -153,19 +135,17 @@ Custom policy for Secrets Manager (more secure):
      - Retries: 3
      - Start period: 60
 
-# OR use the task-definition.json file and register via CLI:
+#### OR use the task-definition.json file and register via CLI:
 aws ecs register-task-definition --cli-input-json file://task-definition.json
 
-# ========================================
-# STEP 9: UPDATE SECURITY GROUPS
-# ========================================
+### STEP 9: UPDATE SECURITY GROUPS
 
-## RDS Security Group (myproject-rds-sg)
+#### RDS Security Group (myproject-rds-sg)
 Inbound Rules:
 - Type: PostgreSQL (5432)
 - Source: myproject-ecs-sg (ECS security group)
 
-## ECS Security Group (myproject-ecs-sg - create new)
+#### ECS Security Group (myproject-ecs-sg - create new)
 Inbound Rules:
 - Type: Custom TCP (8000)
 - Source: myproject-alb-sg (ALB security group)
@@ -173,7 +153,7 @@ Inbound Rules:
 Outbound Rules:
 - All traffic to 0.0.0.0/0
 
-## ALB Security Group (myproject-alb-sg)
+#### ALB Security Group (myproject-alb-sg)
 Inbound Rules:
 - Type: HTTP (80), Source: 0.0.0.0/0
 - Type: HTTPS (443), Source: 0.0.0.0/0
@@ -182,9 +162,7 @@ Outbound Rules:
 - Type: Custom TCP (8000)
 - Destination: myproject-ecs-sg
 
-# ========================================
-# STEP 10: CREATE ECS SERVICE
-# ========================================
+### STEP 10: CREATE ECS SERVICE
 1. Go to ECS → Clusters → myproject-cluster → Services → Create
 2. Launch type: Fargate
 3. Task Definition: myproject-task (latest)
@@ -211,11 +189,9 @@ Outbound Rules:
    - Target: 70%
 10. Create service
 
-# ========================================
-# STEP 11: RUN DATABASE MIGRATIONS
-# ========================================
+### STEP 11: RUN DATABASE MIGRATIONS
 
-# Option A: Use ECS Exec (recommended)
+#### Option A: Use ECS Exec (recommended)
 1. Enable ECS Exec on service
 2. Connect to running task:
 aws ecs execute-command \
@@ -229,7 +205,7 @@ aws ecs execute-command \
 python manage.py migrate
 python manage.py createsuperuser
 
-# Option B: Run one-off task
+#### Option B: Run one-off task
 aws ecs run-task \
   --cluster myproject-cluster \
   --task-definition myproject-task \
@@ -237,12 +213,10 @@ aws ecs run-task \
   --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx],securityGroups=[sg-xxx],assignPublicIp=ENABLED}" \
   --overrides '{"containerOverrides":[{"name":"django-app","command":["python","manage.py","migrate"]}]}'
 
-# Option C: Use AWS Systems Manager Session Manager
-# Requires additional setup but provides secure shell access
+#### Option C: Use AWS Systems Manager Session Manager
+Requires additional setup but provides secure shell access
 
-# ========================================
-# STEP 12: TEST DEPLOYMENT
-# ========================================
+### STEP 12: TEST DEPLOYMENT
 1. Get ALB DNS name from EC2 → Load Balancers
 2. Test endpoints:
    curl http://your-alb-dns.region.elb.amazonaws.com/health/
@@ -251,9 +225,7 @@ aws ecs run-task \
 3. Check CloudWatch Logs:
    /ecs/myproject → django/django-app/TASK_ID
 
-# ========================================
-# STEP 13: SETUP CUSTOM DOMAIN (Optional)
-# ========================================
+### STEP 13: SETUP CUSTOM DOMAIN (Optional)
 1. Go to Route 53
 2. Create hosted zone for your domain
 3. Create A record:
@@ -263,73 +235,67 @@ aws ecs run-task \
 4. Setup SSL certificate in ACM
 5. Add HTTPS listener to ALB
 
-# ========================================
-# STEP 14: SETUP CI/CD (Optional)
-# ========================================
+### STEP 14: SETUP CI/CD (Optional)
 1. Go to CodePipeline → Create pipeline
 2. Source: GitHub/CodeCommit/GitLab
 3. Build: CodeBuild (use buildspec.yml)
 4. Deploy: ECS (cluster + service)
 5. Every git push will trigger auto-deployment
 
-# ========================================
-# MONITORING & MAINTENANCE
-# ========================================
+### MONITORING & MAINTENANCE
 
-# View logs:
+#### View logs:
 aws logs tail /ecs/myproject --follow
 
-# Update service with new image:
+#### Update service with new image:
 aws ecs update-service \
   --cluster myproject-cluster \
   --service myproject-service \
   --force-new-deployment
 
-# Scale service:
+#### Scale service:
 aws ecs update-service \
   --cluster myproject-cluster \
   --service myproject-service \
   --desired-count 4
 
-# Stop task:
+#### Stop task:
 aws ecs stop-task \
   --cluster myproject-cluster \
   --task TASK_ID
 
-# View service events:
+#### View service events:
 aws ecs describe-services \
   --cluster myproject-cluster \
   --services myproject-service
 """
 
-# ====================
-# COST ESTIMATION (Monthly)
-# ====================
-"""
-# Fargate (2 tasks, 0.5 vCPU, 1GB RAM):
+### COST ESTIMATION (Monthly)
+
+#### Fargate (2 tasks, 0.5 vCPU, 1GB RAM):
 - CPU: 2 tasks × 0.5 vCPU × $0.04048/hour × 730 hours = ~$59
 - Memory: 2 tasks × 1GB × $0.004445/GB/hour × 730 hours = ~$6.50
 - Total Fargate: ~$65.50/month
 
-# RDS (db.t3.micro, 20GB storage):
+#### RDS (db.t3.micro, 20GB storage):
 - Instance: $0.017/hour × 730 hours = ~$12.50
 - Storage: 20GB × $0.115/GB = ~$2.30
 - Total RDS: ~$14.80/month
 
-# Application Load Balancer:
+#### Application Load Balancer:
 - ALB: $0.0225/hour × 730 hours = ~$16.50
 - LCU: varies by traffic (~$5-20/month)
 - Total ALB: ~$21.50+/month
 
-# Other services:
+#### Other services:
 - ECR: First 500MB free, then $0.10/GB/month
 - CloudWatch Logs: First 5GB free, then $0.50/GB
 - Secrets Manager: $0.40/secret/month = ~$3.20
 - NAT Gateway (if using private subnets): ~$32/month
 
-# TOTAL ESTIMATED COST: ~$110-150/month
+#### TOTAL ESTIMATED COST: ~$110-150/month
 
-# Cost optimization tips:
+#### Cost optimization tips:
 - Use Spot instances for non-critical tasks
 - Use Fargate Savings Plans for 30-50% discount
 - Use private subnets with VPC endpoints instead of NAT Gateway
@@ -337,54 +303,52 @@ aws ecs describe-services \
 - Enable ALB idle timeout and connection draining
 """
 
-# ====================
-# TROUBLESHOOTING
-# ====================
-"""
-# Issue 1: Tasks failing health checks
+### TROUBLESHOOTING
+
+#### Issue 1: Tasks failing health checks
 - Check CloudWatch logs for errors
 - Verify health check endpoint /health/ is accessible
 - Increase health check grace period
 - Check security groups allow ALB → ECS traffic on port 8000
 
-# Issue 2: Cannot connect to RDS
+#### Issue 2: Cannot connect to RDS
 - Verify RDS security group allows inbound from ECS security group
 - Check RDS endpoint is correct in Secrets Manager
 - Ensure tasks are in same VPC as RDS
 - Test connection using psql from ECS task
 
-# Issue 3: Tasks start then stop immediately
+#### Issue 3: Tasks start then stop immediately
 - Check CloudWatch logs for startup errors
 - Verify all environment variables are set correctly
 - Check Secrets Manager ARNs are correct
 - Verify IAM roles have correct permissions
 
-# Issue 4: Static files not loading
+#### Issue 4: Static files not loading
 - Ensure collectstatic runs in Dockerfile
 - Check WhiteNoise is in MIDDLEWARE
 - Verify STATIC_ROOT is set correctly
 
-# Issue 5: 502 Bad Gateway from ALB
+#### Issue 5: 502 Bad Gateway from ALB
 - Check ECS tasks are running and healthy
 - Verify target group health checks are passing
 - Check security groups allow traffic
 - Review CloudWatch logs for application errors
 
-# Issue 6: Database migrations not applied
+#### Issue 6: Database migrations not applied
 - Run migrations manually using ECS Exec
 - Or create a separate task definition for migrations
 - Check database connectivity from ECS tasks
 
-# Debug commands:
-# Check task status:
+### Debug commands:
+#### Check task status:
 aws ecs describe-tasks --cluster myproject-cluster --tasks TASK_ID
 
-# View logs:
+#### View logs:
 aws logs get-log-events \
   --log-group-name /ecs/myproject \
   --log-stream-name django/django-app/TASK_ID
 
-# Test RDS connectivity:
+#### Test RDS connectivity:
 aws ecs execute-command \
   --cluster myproject-cluster \
   --task TASK_ID \

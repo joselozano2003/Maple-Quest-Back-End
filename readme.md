@@ -42,7 +42,6 @@ docker-compose exec web python manage.py migrate
 
 - Make sure you have the AWS CLI installed and configured with the proper credentials.
 - AWS connection is mostly for deploying the infrastructure using AWS CDK and for pushing Docker images to Amazon ECR.
-- The later will be added in future PR where I will add GH actions for CI/CD.
 
 ## Documentation
 

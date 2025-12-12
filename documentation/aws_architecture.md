@@ -141,22 +141,6 @@
 3. DBeaver → RDS (Direct Port 5432)  Security Risk
 ```
 
-## Security Issues
-
-### **Critical: Database Exposure**
-
-- **Issue**: RDS database is publicly accessible from anywhere
-- **Risk**: Potential unauthorized access to sensitive data
-- **Current**: `0.0.0.0/0` can connect to port 5432
-- **Impact**: High security vulnerability
-
-### **Recommendations**
-
-1. Move RDS to private subnets
-2. Remove public accessibility
-3. Use bastion host or VPN for development access
-4. Implement proper security groups
-
 ## **Environment Variables**
 
 ### **ECS Task Environment**
@@ -197,14 +181,3 @@ DB_PORT=5432
 | **ALB**           | Standard          | ~$20/month  |
 | **S3**            | Pay per use       | Variable    |
 | **Data Transfer** | Pay per GB        | Variable    |
-
-## **Recommended Architecture**
-
-For improved security, the database should be moved to private subnets:
-
-```
-Internet → ALB (Public) → ECS Tasks (Public) → RDS (Private)
-                                            ↗ S3 (Global)
-```
-
-This eliminates direct internet access to the database while maintaining all functionality.
