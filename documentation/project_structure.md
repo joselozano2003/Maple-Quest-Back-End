@@ -69,7 +69,6 @@
 
 ## File Naming Conventions
 
-- Use Django's standard app structure
 - Models use PascalCase class names
 - Views use ViewSet suffix for DRF viewsets
 - URL patterns follow REST conventions
