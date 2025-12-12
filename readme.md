@@ -9,41 +9,19 @@
 - The local `Dockerfile` works natively on ARM64 (Apple Silicon)
 - For AWS deployment, use `Dockerfile.production` which targets AMD64
 
-## General:
+## Initialization Steps:
 
-- To start the app
-
-`make up`
-
-- To shut down the app
-
-`make down`
-
-## Running Django commands
-
-- As the app is running inside a docker container, to run django commands you need to run them through docker-compose. For example, to run migrations:
-
-`docker-compose exec web python manage.py migrate`
-
-- To create a superuser:
-  `docker-compose exec web python manage.py createsuperuser`
-
-- Just run:
-  `docker-compose exec web python manage.py <command>`
-
-**Note:** After adding first_name, last_name, and province fields, you'll need to run migrations:
-
-```bash
-docker-compose exec web python manage.py makemigrations
-docker-compose exec web python manage.py migrate
-```
+1. Ensure that all prerequisites are met
+2. Copy the contents from `.env.example` and create a new file named `.env` in the root directory of this repository
+3. Execute the command `make up` in the terminal in the root directory of this repository, to start up the server
+4. When done, execute the command `make down` in the terminal in the root directory of this repository, to shut down the server
 
 ## Connecting to AWS
 
 - Make sure you have the AWS CLI installed and configured with the proper credentials.
 - AWS connection is mostly for deploying the infrastructure using AWS CDK and for pushing Docker images to Amazon ECR.
 
-## Documentation
+## AI-Generated Documentation
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/joselozano2003/Maple-Quest-Back-End)
 
@@ -63,7 +41,6 @@ The application uses different storage solutions for local development and produ
 
 - **Storage**: Real AWS S3 bucket
 - **Access**: HTTPS with AWS infrastructure
-- **URLs**: `https://bucket-name.s3.region.amazonaws.com/...`
 - **Benefits**: Scalable, reliable, global CDN
 
 ### Upload Workflow:
@@ -72,59 +49,16 @@ The application uses different storage solutions for local development and produ
 2. **Upload Image**: Use the `upload_url` to PUT the image file
 3. **Use Public URL**: Use the `public_url` in your visit images
 
-**iOS Upload Example:**
-
-```swift
-// 1. Get presigned URL from your API
-let response = await getUploadURL(filename: "photo.jpg")
-
-// 2. Upload image using the presigned URL
-let uploadURL = URL(string: response.upload_url)!
-var request = URLRequest(url: uploadURL)
-request.httpMethod = "PUT"
-request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
-request.httpBody = imageData
-
-let (_, uploadResponse) = try await URLSession.shared.data(for: request)
-
-// 3. Use the public_url in your visit API call
-let visitData = [
-    "note": "Beautiful place!",
-    "images": [
-        [
-            "image_url": response.public_url,
-            "description": "Amazing view"
-        ]
-    ]
-]
-```
-
-**Test Upload with curl:**
-
-```bash
-# 1. Get upload URL
-RESPONSE=$(curl -s -X POST http://localhost:8000/api/users/generate_upload_url/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"filename": "test.jpg"}')
-
-# 2. Extract upload URL and upload file
-UPLOAD_URL=$(echo $RESPONSE | jq -r '.upload_url')
-curl -X PUT "$UPLOAD_URL" \
-  -H "Content-Type: image/jpeg" \
-  --data-binary @your-image.jpg
-```
-
 ### Environment Differences:
 
-| Feature          | Local (MinIO)            | Production (AWS S3)                      |
-| ---------------- | ------------------------ | ---------------------------------------- |
-| **Base URL**     | `http://localhost:9000`  | `https://bucket.s3.region.amazonaws.com` |
-| **Credentials**  | minioadmin/minioadmin123 | AWS IAM (automatic)                      |
-| **Console**      | http://localhost:9001    | AWS S3 Console                           |
-| **Cost**         | Free                     | Pay per usage                            |
-| **Performance**  | Local network speed      | Global CDN                               |
-| **Availability** | Local only               | 99.999999999%                            |
+| Feature          | Local (MinIO)            | Production (AWS S3)                          |
+| ---------------- | ------------------------ | -------------------------------------------- |
+| **Base URL**     | `http://localhost:9000`  | `https://<bucket>.s3.<region>.amazonaws.com` |
+| **Credentials**  | minioadmin/minioadmin123 | AWS IAM (automatic)                          |
+| **Console**      | http://localhost:9001    | AWS S3 Console                               |
+| **Cost**         | Free                     | Pay per usage                                |
+| **Performance**  | Local network speed      | Global CDN                                   |
+| **Availability** | Local only               | 99.999999999%                                |
 
 ### Deployment:
 
@@ -200,72 +134,6 @@ Returns server health status and database connectivity.
 | `/api/friend-requests/`             | GET    | ✅   | Get friend requests   |
 | `/api/friend-requests/{id}/accept/` | POST   | ✅   | Accept friend request |
 | `/api/friend-requests/{id}/reject/` | POST   | ✅   | Reject friend request |
-
-## Common Use Cases
-
-### 1. Upload and Share a Photo at a Location
-
-```bash
-# Step 1: Get upload URL
-curl -X POST http://localhost:8000/api/users/generate_upload_url/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"filename": "niagara.jpg"}'
-
-# Step 2: Upload image to S3 (use upload_url from response)
-curl -X PUT "UPLOAD_URL_FROM_STEP_1" \
-  -H "Content-Type: image/jpeg" \
-  --data-binary @niagara.jpg
-
-# Step 3: Visit location with the image
-curl -X POST http://localhost:8000/api/locations/LOCATION_ID/visit/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "note": "Amazing waterfall!",
-    "images": [{
-      "image_url": "PUBLIC_URL_FROM_STEP_1",
-      "description": "Beautiful sunset at Niagara Falls"
-    }]
-  }'
-```
-
-### 2. View All Photos at a Location
-
-```bash
-# Get all user-submitted photos for a location
-curl -X GET http://localhost:8000/api/locations/LOCATION_ID/images/
-```
-
-### 3. Get Your Visit History with Photos
-
-```bash
-# Get all your visits
-curl -X GET http://localhost:8000/api/visits/ \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# Get specific visit with all photos
-curl -X GET http://localhost:8000/api/visits/VISIT_ID/ \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### 4. Add a Friend and View Their Profile
-
-```bash
-# Send friend request
-curl -X POST http://localhost:8000/api/friend-requests/add_friend/ \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"email": "friend@example.com"}'
-
-# Accept friend request (as the recipient)
-curl -X POST http://localhost:8000/api/friend-requests/REQUEST_ID/accept/ \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# View friends list
-curl -X GET http://localhost:8000/api/users/friends/ \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
 
 ## Response Status Codes
 
